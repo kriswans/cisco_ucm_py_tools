@@ -10,8 +10,10 @@ from suds.xsd.doctor import ImportDoctor
 
 
 class AXL(object):
+    
     """
     The AXL class sets up the connection to the call manager with methods for configuring UCM.
+    Thanks to https://github.com/bobthebutcher, as I reused his class.
     """
 
     def __init__(self, username, password, wsdl, cucm, cucm_version=10):
@@ -48,6 +50,13 @@ class AXL(object):
 
 
 def orphanFinder(wsdl, cucm, username, password):
+
+        """
+        Function to find CSF devices that don't belong to a user, then find the DN associated with the device.
+        When users are deleted from the LDAP database, those devices and DNs get orphaned.
+        The intent is to feed into other scripts that clean up the devices and DNs, as well as
+        recycle the DNs.
+        """
 
     axl=AXL(username,password,wsdl,cucm)
 
