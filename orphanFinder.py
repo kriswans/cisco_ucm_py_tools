@@ -1,6 +1,7 @@
 """Author: Kris Swanson, kriswans@cisco.com """
 """This was originally part of the cisco_ucm_py_tools repository @ https://github.com/kriswans/cisco_ucm_py_tools """
-"""Be advised that the AXLAPI.wsdl, AXLEnums.xsd, and AXLSoap.xsd must be in the direcotry where this script is run  """
+"""Be advised that the AXLAPI.wsdl, AXLEnums.xsd, and AXLSoap.xsd must be in the directory where this script is run  """
+"""Please use suds-jurko (pip install suds-jurko), not 'suds' module """
 
 
 import ssl
