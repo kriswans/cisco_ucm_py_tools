@@ -8,6 +8,7 @@ import urllib
 import os
 import time
 import datetime
+import sys
 
 from suds.transport.https import HttpAuthenticated
 from suds.client import Client
@@ -56,7 +57,8 @@ class AXL(object):
                              transport=t)
 
 
-def orphanFinder(wsdl, cucm, username, password):
+
+def orphanFinder(wsdl, cucm, username, password, orph_list, orph_dn_list):
 
     """
     Function to find CSF devices that don't belong to a user, then find the DN associated with the device.
@@ -71,8 +73,7 @@ def orphanFinder(wsdl, cucm, username, password):
 
     """ Create empty lists to fill later.
     These will contain values to be written to csv with ophaned devices and DNs """
-    orph_list=[]
-    orph_dn_list=[]
+
 
     """Creating a couple text files to seperately list ophaned CSFs and DNs """
     orph_CSFs=open('orph_CSFs.txt','w')
@@ -119,13 +120,44 @@ def orphanFinder(wsdl, cucm, username, password):
 
     orph_matrix.close()
 
+def destroyOrphDevsDNs(wsdl,cucm,username,password,orph_list,orph_dn_list):
+
+    axl=AXL(username,password,wsdl,cucm)
+
+    print(4*"***WARNING***")
+    print("**This action cannot be undone!!\n")
+    print("**All orphaned CSF devices and their DNs will be destroyed!!")
+    print(4*"***WARNING***")
+    print('\n')
+    kill=input("Would you like to remove all CSF devices and their DNs? (Y or N): ")
+
+    if kill == 'Y':
+        orph_len=len(orph_list)
+        for rows in range(0,orph_len):
+            delete=input("Are you sure you want to delete: "+orph_list[rows]+" with DN: "+orph_dn_list[rows]+"? (Y or N) : ")
+            if delete == 'Y':
+                axl.client.service.removePhone (name=orph_list[rows])
+                axl.client.service.removeLine (pattern=orph_dn_list[rows])
+            if delete =='N':
+                pass
+            else:
+                pass
+    if kill == 'N':
+        print("Exiting")
+        sys.exit()
+    else:
+        print("Exiting")
+        sys.exit()
 
 
 if __name__=="__main__":
     cwd=(os.getcwd())
     print("Looking for AXLAPI.wsdl in current working directory:\n{cwd}\n".format(cwd=cwd))
+    orph_list=[]
+    orph_dn_list=[]
     wsdl = 'file:///'+cwd+'/AXLAPI.wsdl'
     cucm=input("Please enter the target CUCM address: ")
     username=input("Please enter AXL username: ")
     password=input("Please enter the AXL password: ")
-    orphanFinder(wsdl,cucm,username,password)
+    orphanFinder(wsdl,cucm,username,password, orph_list, orph_dn_list)
+    destroyOrphDevsDNs(wsdl,cucm,username,password,orph_list,orph_dn_list)
