@@ -1,6 +1,13 @@
+"""Author: Kris Swanson, kriswans@cisco.com """
+"""This was originally part of the cisco_ucm_py_tools repository @ https://github.com/kriswans/cisco_ucm_py_tools """
+"""Be advised that the AXLAPI.wsdl, AXLEnums.xsd, and AXLSoap.xsd must be in the direcotry where this script is run  """
+
+
 import ssl
 import urllib
 import os
+import time
+import datetime
 
 from suds.transport.https import HttpAuthenticated
 from suds.client import Client
@@ -12,7 +19,7 @@ from suds.xsd.doctor import ImportDoctor
 class AXL(object):
 
     """
-    The AXL class sets up the connection to the call manager with methods for configuring UCM.
+    The AXL class sets up the connection to the call manager/UCM with methods for configuring UCM.
     Thanks to https://github.com/bobthebutcher, as I reused his class.
     """
 
@@ -62,25 +69,31 @@ def orphanFinder(wsdl, cucm, username, password):
 
     resp=axl.client.service.listPhone ({'name': 'CSF%'}, returnedTags={'name': '', 'description': '', 'ownerUserName':''})
 
-    len_resp=len(resp[1][0][0])
+    """ Create empty lists to fill later.
+    These will contain values to be written to csv with ophaned devices and DNs """
     orph_list=[]
     orph_dn_list=[]
-    orph_CSFs=open('orph_CSFs.csv','w')
-    orph_DNs=open('orph_DNs.csv','w')
-    for dev in range (0,len_resp):
 
+    """Creating a couple text files to seperately list ophaned CSFs and DNs """
+    orph_CSFs=open('orph_CSFs.txt','w')
+    orph_DNs=open('orph_DNs.txt','w')
+
+    """ From the listPhone response we establish the lenth of the tuple to iterate through
+     that range"""
+    len_resp=len(resp[1][0][0])
+    for dev in range (0,len_resp):
         try:
-            resp[1][0][0][dev][3][0]
+            orph=resp[1][0][0][dev][3][0]
         except IndexError:
             orph=resp[1][0][0][dev][1]
             orph_CSFs.write(orph+'\n')
             orph_list.append(orph)
 
-    print (orph_list)
-
+    """ From the list of phones that has no user associated, we want to pull the DNs. If there is
+    no DN associated, it will throw a TypeError and we want to write 'No Number' to our list/csv"""
     for phones in orph_list:
         try:
-            get_phone=resp=axl.client.service.getPhone (name= phones)
+            get_phone=axl.client.service.getPhone (name= phones)
             DN=get_phone[1][0][0]['lines']['line'][0]['dirn']['pattern']
             orph_DNs.write(DN+'\n')
             orph_dn_list.append(DN)
@@ -89,13 +102,30 @@ def orphanFinder(wsdl, cucm, username, password):
             orph_DNs.write(DN+'\n')
             orph_dn_list.append(DN)
 
-    print(orph_dn_list)
+    orph_CSFs.close()
+    orph_DNs.close()
+
+    """Create a csv where the name includes the timestamp when the python script was run that
+    will contain the orphaned devices and DNs """
+    ts = time.time()
+    st = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d_@_%H.%M.%S')
+    orph_matrix=open('orphan_devs_'+st+'.csv','w')
+
+    """Establish the length of the orphan list to iterate through. """
+    orph_len=len(orph_list)
+    for rows in range(0,orph_len):
+        orph_matrix.write(orph_list[rows]+',')
+        orph_matrix.write(orph_dn_list[rows]+'\n')
+
+    orph_matrix.close()
+
+
 
 if __name__=="__main__":
     cwd=(os.getcwd())
     print("Looking for AXLAPI.wsdl in current working directory:\n{cwd}\n".format(cwd=cwd))
     wsdl = 'file:///'+cwd+'/AXLAPI.wsdl'
-    cucm= input("Please enter the target CUCM address: ")
-    username= input("Please enter AXL username: ")
+    cucm=input("Please enter the target CUCM address: ")
+    username=input("Please enter AXL username: ")
     password=input("Please enter the AXL password: ")
     orphanFinder(wsdl,cucm,username,password)
