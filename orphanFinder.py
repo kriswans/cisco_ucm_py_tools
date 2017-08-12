@@ -1,4 +1,4 @@
-""" version 0.3"""
+""" version 0.3.1"""
 """Author: Kris Swanson, kriswans@cisco.com """
 """This was originally part of the cisco_ucm_py_tools repository @ https://github.com/kriswans/cisco_ucm_py_tools """
 """Be advised that the AXLAPI.wsdl, AXLEnums.xsd, and AXLSoap.xsd must be in the directory where this script is run  """
@@ -173,6 +173,9 @@ def destroyOrphDevsDNs(wsdl,cucm,username,password,orph_list,orph_dn_list,del_op
     print('\n')
 
     q_del=int(input("\n\nHow many "+row_types+" at a time in the bulk delete (can be 1 or more)?: "))
+
+    if q_del > orph_len:
+        q_del=orph_len
 
     if q_del > 0:
         runs=int(orph_len / q_del)
